@@ -1,13 +1,13 @@
 const { CREATED, OK } = require('http-status-codes').StatusCodes;
 const UserModel = require('../models/User');
 const { BadRequestError, UnauthenticatedError } = require('../errors');
-const { attachCookieToResponse } = require('../utils');
+const { attachCookieToResponse, generateTokenUser } = require('../utils');
 
 const register = async (req, res) => {
   const { email, name, password } = req.body;
   const role = !(await UserModel.find({})).length ? 'admin' : 'user';
   const user = await UserModel.create({ email, name, password, role });
-  const tokenUser = { name: user.name, userId: user._id, role: user.role };
+  const tokenUser = generateTokenUser(user);
   attachCookieToResponse(res, tokenUser);
   return res.status(CREATED).json({ user: tokenUser });
 };
@@ -18,7 +18,7 @@ const login = async (req, res) => {
   const user = await UserModel.findOne({ email });
   if (!user || !(await user.comparePassword(password)))
     throw new UnauthenticatedError('Please provide valid user credentials');
-  const tokenUser = { name: user.name, userId: user._id, role: user.role };
+  const tokenUser = generateTokenUser(user);
   attachCookieToResponse(res, tokenUser);
   return res.status(OK).json({ user: tokenUser });
 };

@@ -1,8 +1,15 @@
 const jwt = require('jsonwebtoken');
+const { connect } = require('mongoose');
+const { UnauthorizedError } = require('./errors');
 
 const USER_ROLES = {
   admin: 'admin',
   user: 'user'
+};
+
+const connectDB = async () => {
+  await connect(process.env.MONGO_URI);
+  console.log('connected to the database');
 };
 
 const attachCookieToResponse = (response, tokenUser) => {
@@ -15,10 +22,30 @@ const attachCookieToResponse = (response, tokenUser) => {
   });
 };
 
+const checkIsSameUser = (user, resourceUserId) => {
+  if (user.role === 'admin' || user.userId === resourceUserId.toHexString())
+    return;
+  throw new UnauthorizedError('Not authorized to access this route.');
+};
+
 const generateJWTToken = (tokenUser) => {
   return jwt.sign(tokenUser, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRY
   });
 };
 
-module.exports = { USER_ROLES, attachCookieToResponse, generateJWTToken };
+const generateTokenUser = (user) => {
+  return { name: user.name, userId: user._id, role: user.role };
+};
+
+const verifyJWTToken = (token) => jwt.verify(token, process.env.JWT_SECRET);
+
+module.exports = {
+  USER_ROLES,
+  attachCookieToResponse,
+  checkIsSameUser,
+  connectDB,
+  generateJWTToken,
+  generateTokenUser,
+  verifyJWTToken
+};

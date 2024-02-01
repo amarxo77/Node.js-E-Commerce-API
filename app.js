@@ -7,12 +7,14 @@ const cookieParser = require('cookie-parser');
 // middlewares
 const errorHandlerMiddleware = require('./middlewares/error-handler');
 const notFoundMiddleware = require('./middlewares/not-found');
+const { authenticateUser } = require('./middlewares/authentication');
 
 // routers
 const authRouter = require('./routers/auth');
+const userRouter = require('./routers/user');
 
 // functions
-const connectDB = require('./db/connect');
+const { connectDB } = require('./utils');
 
 const app = express();
 
@@ -25,6 +27,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/users', authenticateUser, userRouter);
 
 app.use('*', notFoundMiddleware);
 app.use(errorHandlerMiddleware);
